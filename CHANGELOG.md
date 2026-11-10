@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/miyankooo/SimpleMap/compare/v1.0.0...v1.0.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* a smaller resize cursor on the full-screen map's corner ([214846c](https://github.com/miyankooo/SimpleMap/commit/214846c01ce8dd7873a31851af2a2c1eba3badab))
+
 ## 1.0.0 (2026-11-10)
 
 
