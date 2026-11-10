@@ -137,12 +137,14 @@ local function Setup()
         ns.RetireTip()
     end)
 
-    -- Blizzard's resize grabber and cursor, driving the scale instead of the size.
+    -- Blizzard's resize grabber, driving the scale instead of the size.
     local grip = CreateFrame("Button", nil, border, "PanelResizeButtonTemplate")
     grip:SetPoint("BOTTOMRIGHT", -4, 4)
     grip:SetFrameLevel(border.TitleContainer:GetFrameLevel())
     grip:Hide()
     grip:HookScript("OnEnter", function(self)
+        -- The template's UI_RESIZE_CURSOR draws large; Blizzard's 32 px resize arrow replaces it.
+        SetCursor("Interface\\Cursor\\UI-Cursor-SizeRight")
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip_SetTitle(GameTooltip, ns.title)
         GameTooltip_AddNormalLine(GameTooltip, "Drag to resize the map. Type /sm reset to restore its place and size.")

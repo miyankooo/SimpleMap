@@ -43,6 +43,10 @@ HelpTip = { ButtonStyle = {}, Point = {}, Alignment = {} }
 strtrim = function(text) return (text:gsub("^%s+", ""):gsub("%s+$", "")) end
 Clamp = function(value, low, high) return math.min(math.max(value, low), high) end
 SlashCmdList = {}
+local cursor
+SetCursor = function(name) cursor = name end
+GameTooltip = setmetatable({}, { __index = function() return function() end end })
+GameTooltip_SetTitle, GameTooltip_AddNormalLine = function() end, function() end
 
 local grip
 CreateFrame = function(_, _, _, template)
@@ -162,6 +166,8 @@ Check("Blizzard's anchor gives way to the saved place",
 maximized = true
 mapEvents.WorldMapMaximized()
 Check("the grabber shows on the full map", grip ~= nil and grip.scripts.OnMouseDown ~= nil)
+grip.scripts.OnEnter(grip)
+Check("hovering it shows the small resize cursor", cursor == "Interface\\Cursor\\UI-Cursor-SizeRight")
 cursorX, cursorY = 1100, 50
 grip.scripts.OnMouseDown()
 Check("a press saves the full map's top-left corner", SimpleMapDB.expanded[1] == 100 and SimpleMapDB.expanded[2] == 750)
