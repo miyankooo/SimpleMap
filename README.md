@@ -2,7 +2,7 @@
 
 # Simple Map
 
-A WoW Forever addon that reveals the whole world map, unexplored areas included, and lets you move and resize the map. The full-screen map no longer blacks out the game, so the world stays in view around it.
+A WoW Forever addon that lifts the fog of war from the world map, so every area shows even before you explore it, and lets you move and resize the map. The full-screen map no longer blacks out the game, so the world stays in view around it.
 
 ## Features
 
