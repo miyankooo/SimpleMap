@@ -1,0 +1,12 @@
+## Interface: 16001
+## Title: Simple Map
+## Notes: Reveals every area of the world map and lets you move and resize it.
+## Author: miyanko
+## Version: @project-version@
+## Category: Map
+## IconTexture: Interface\Icons\Icon_TreasureMap
+## SavedVariables: SimpleMapDB
+
+Data.lua
+Onboarding.lua
+Map.lua
