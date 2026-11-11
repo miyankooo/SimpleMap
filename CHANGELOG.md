@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/miyankooo/SimpleMap/compare/v1.0.1...v1.1.0) (2026-11-11)
+
+
+### Features
+
+* hovering a revealed area shows its name, like an explored one ([8db33bd](https://github.com/miyankooo/SimpleMap/commit/8db33bd0994431ce0edbe04c22faca8996dce64e))
+
 ## [1.0.1](https://github.com/miyankooo/SimpleMap/compare/v1.0.0...v1.0.1) (2026-11-10)
 
 
