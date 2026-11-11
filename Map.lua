@@ -3,7 +3,11 @@ local addonName, ns = ...
 -- Below half size the full map's text and buttons get hard to read.
 local MIN_SCALE = 0.5
 
-local db, resizeStart
+-- An overlay lists width, height, offsetX, offsetY, areaID and its hit rect before its tiles (Data.lua).
+local FIRST_TILE = 10
+
+-- hidden: the shown map's revealed overlays and its art's size, for naming the area under the cursor.
+local db, resizeStart, hidden
 
 -- Partial tiles sit in power-of-two files of at least 16 px (MapExplorationDataProvider.lua:121-153).
 local function FileSize(pixels)
@@ -18,6 +22,7 @@ end
 -- for the explored ones (MapExplorationDataProvider.lua:96-178).
 local function Reveal(pin, textures)
     textures:ReleaseAll()
+    hidden = nil
     local map = pin:GetMap()
     local mapID = map:GetMapID()
     local overlays = mapID and ns.overlays[C_Map.GetMapArtID(mapID)]
@@ -31,14 +36,16 @@ local function Reveal(pin, textures)
     end
     local layer = C_Map.GetMapArtLayers(mapID)[map:GetCanvasContainer():GetCurrentLayerIndex()]
     local tileWidth, tileHeight = layer.tileWidth, layer.tileHeight
+    hidden = { width = layer.layerWidth, height = layer.layerHeight }
 
     for _, overlay in ipairs(overlays) do
         local width, height, offsetX, offsetY = overlay[1], overlay[2], overlay[3], overlay[4]
-        if not explored[overlay[5]] then
+        if not explored[overlay[FIRST_TILE]] then
+            table.insert(hidden, overlay)
             local columns = math.ceil(width / tileWidth)
-            for i = 5, #overlay do
-                local column = (i - 5) % columns
-                local row = math.floor((i - 5) / columns)
+            for i = FIRST_TILE, #overlay do
+                local column = (i - FIRST_TILE) % columns
+                local row = math.floor((i - FIRST_TILE) / columns)
                 local pixelWidth = math.min(tileWidth, width - column * tileWidth)
                 local pixelHeight = math.min(tileHeight, height - row * tileHeight)
                 local texture = textures:Acquire()
@@ -50,6 +57,23 @@ local function Reveal(pin, textures)
             end
         end
     end
+end
+
+-- Names the revealed area under the cursor, at normalized x and y: the smallest hit rect holding it wins.
+local function AreaAt(x, y)
+    if not hidden then
+        return
+    end
+    x, y = x * hidden.width, y * hidden.height
+    local areaID, smallest
+    for _, overlay in ipairs(hidden) do
+        local left, top, right, bottom = overlay[6], overlay[7], overlay[8], overlay[9]
+        local size = (right - left) * (bottom - top)
+        if x >= left and x <= right and y >= top and y <= bottom and (not smallest or size < smallest) then
+            areaID, smallest = overlay[5], size
+        end
+    end
+    return areaID and C_Map.GetAreaInfo(areaID)
 end
 
 local function Mode()
@@ -117,6 +141,32 @@ local function Setup()
             Reveal(pin, textures)
         end)
     end
+
+    -- Blizzard's area label names explored areas only (MapUtil.lua:62-73). An own copy of it names the revealed
+    -- ones, shown only while Blizzard's is empty, so explored areas and hovered pins keep Blizzard's label.
+    local blizzardLabel
+    for provider in pairs(WorldMapFrame.dataProviders) do
+        if provider.SetOffsetY then -- only the area label provider has it (AreaLabelDataProvider.lua:46)
+            blizzardLabel = provider.Label
+        end
+    end
+    local label = CreateFrame("Frame", nil, blizzardLabel:GetParent(), "AreaLabelFrameTemplate")
+    label:SetAllPoints(blizzardLabel)
+    label:SetFrameStrata("HIGH")
+    label.Name:SetVertexColor(AREA_NAME_FONT_COLOR:GetRGB())
+    local shown
+    -- Replaces the template's OnUpdate, which reads the data provider this copy has none of.
+    label:SetScript("OnUpdate", function()
+        local blizzardName = blizzardLabel.Name:GetText()
+        local name
+        if (blizzardName == nil or blizzardName == "") and WorldMapFrame:IsCanvasMouseFocus() then
+            name = AreaAt(WorldMapFrame:GetNormalizedCursorPosition())
+        end
+        if name ~= shown then
+            shown = name
+            label.Name:SetText(name)
+        end
+    end)
 
     WorldMapFrame:SetMovable(true)
     WorldMapFrame:SetClampedToScreen(true)

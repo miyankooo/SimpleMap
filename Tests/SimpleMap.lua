@@ -23,6 +23,14 @@ local function Frame(fields)
     return setmetatable(frame, { __index = function() return function() end end })
 end
 
+local function FontString()
+    return {
+        SetText = function(self, text) self.text = text end,
+        GetText = function(self) return self.text end,
+        SetVertexColor = function() end,
+    }
+end
+
 function hooksecurefunc(object, name, hook)
     local original = object[name]
     object[name] = function(...)
@@ -48,10 +56,16 @@ SetCursor = function(name) cursor = name end
 GameTooltip = setmetatable({}, { __index = function() return function() end end })
 GameTooltip_SetTitle, GameTooltip_AddNormalLine = function() end, function() end
 
-local grip
+AREA_NAME_FONT_COLOR = { GetRGB = function() return 1, 1, 1 end }
+
+local grip, label
 CreateFrame = function(_, _, _, template)
     local frame = Frame()
     if template == "PanelResizeButtonTemplate" then grip = frame end
+    if template == "AreaLabelFrameTemplate" then
+        label = frame
+        frame.Name = FontString()
+    end
     return frame
 end
 
@@ -74,9 +88,11 @@ CreateTexturePool = function()
         end,
     }
 end
+local areaNames = { [11] = "Goldshire", [13] = "Lion's Pride Inn" }
 C_Map = {
     GetMapArtID = function() return 99 end,
-    GetMapArtLayers = function() return { { tileWidth = 256, tileHeight = 256 } } end,
+    GetMapArtLayers = function() return { { layerWidth = 1000, layerHeight = 700, tileWidth = 256, tileHeight = 256 } } end,
+    GetAreaInfo = function(areaID) return areaNames[areaID] end,
 }
 C_MapExplorationInfo = { GetExploredMapTextures = function() return { { fileDataIDs = { 2001 } } } end }
 
@@ -86,12 +102,18 @@ function map.GetCanvasContainer() return { GetCurrentLayerIndex = function() ret
 local pin = Frame({ dataProvider = { GetDrawLayer = function() return "ARTWORK", 0 end } })
 pin.RefreshOverlays = function() end
 function pin.GetMap() return map end
+-- Blizzard's area label and another data provider with a label of its own.
+local labelProvider = { Label = Frame({ Name = FontString() }), SetOffsetY = function() end }
+local mouseFocus, cursorMapX, cursorMapY = false, 0, 0
 -- A 1000 x 700 map whose top-left corner sits at 100, 750.
 WorldMapFrame = Frame({
     BlackoutFrame = Frame({ Blackout = Frame() }),
     BorderFrame = Frame({ TitleContainer = Frame() }),
+    dataProviders = { [labelProvider] = true, [{ Label = Frame() }] = true },
 })
 function WorldMapFrame.IsMaximized() return maximized end
+function WorldMapFrame.IsCanvasMouseFocus() return mouseFocus end
+function WorldMapFrame.GetNormalizedCursorPosition() return cursorMapX, cursorMapY end
 function WorldMapFrame.GetLeft() return 100 end
 function WorldMapFrame.GetTop() return 750 end
 function WorldMapFrame.GetSize() return 1000, 700 end
@@ -128,10 +150,12 @@ local complete, count = true, 0
 for _, overlays in pairs(ns.overlays) do
     for _, overlay in ipairs(overlays) do
         count = count + 1
-        complete = complete and #overlay - 4 == math.ceil(overlay[1] / 256) * math.ceil(overlay[2] / 256)
+        complete = complete and #overlay - 9 == math.ceil(overlay[1] / 256) * math.ceil(overlay[2] / 256)
+            and overlay[5] > 0 and overlay[6] < overlay[8] and overlay[7] < overlay[9]
     end
 end
-Check(("Data.lua lists %d overlays, each with its full tile grid"):format(count), count > 0 and complete)
+Check(("Data.lua lists %d overlays, each with its area, hit rect and full tile grid"):format(count),
+    count > 0 and complete)
 
 -- Onboarding.
 local PREFIX = "<gold>[Simple Map]</gold>: "
@@ -142,10 +166,14 @@ Check("it ends with where the commands are", login[1]:find("Type /sm help for th
 Check("the full map hides no world and blocks no clicks",
     WorldMapFrame.BlackoutFrame.Blackout.hidden and WorldMapFrame.BlackoutFrame.mouse == false)
 
--- Reveal: a 300 x 200 overlay in two tiles and an explored 256 x 256 one.
-ns.overlays = { [99] = { { 300, 200, 10, 20, 1001, 1002 }, { 256, 256, 0, 0, 2001 } } }
+-- Reveal: a 300 x 200 overlay in two tiles, an explored 256 x 256 one and a small one inside the first.
+ns.overlays = { [99] = {
+    { 300, 200, 10, 20, 11, 10, 20, 310, 220, 1001, 1002 },
+    { 256, 256, 0, 0, 12, 0, 0, 256, 256, 2001 },
+    { 32, 32, 100, 100, 13, 100, 100, 132, 132, 3001 },
+} }
 pin:RefreshOverlays()
-Check("only the unexplored overlay is drawn, one texture per tile", #textures == 2)
+Check("only the unexplored overlays are drawn, one texture per tile", #textures == 3)
 local full, part = textures[1], textures[2]
 Check("a full tile reads its whole 256 px file",
     full.size[1] == 256 and full.size[2] == 200 and full.coords[2] == 1 and full.coords[4] == 200 / 256)
@@ -153,7 +181,23 @@ Check("a partial tile reads its power-of-two file", part.size[1] == 44 and part.
 Check("tiles sit on the overlay's offset, row by row",
     full.point[2] == 10 and full.point[3] == -20 and part.point[2] == 266 and part.file == 1002)
 pin:RefreshOverlays()
-Check("a refresh replaces the textures", #textures == 2)
+Check("a refresh replaces the textures", #textures == 3)
+
+-- Hover names, at art pixels on the 1000 x 700 art.
+local function Hover(x, y)
+    cursorMapX, cursorMapY = x / 1000, y / 700
+    label.scripts.OnUpdate()
+    return label.Name.text
+end
+mouseFocus = true
+Check("hovering a revealed area names it", Hover(200, 150) == "Goldshire")
+Check("the smallest hit rect wins where two overlap", Hover(116, 116) == "Lion's Pride Inn")
+Check("an explored area gets no second name", Hover(5, 5) == nil)
+labelProvider.Label.Name:SetText("Elwynn Forest")
+Check("Blizzard's own label keeps priority", Hover(200, 150) == nil)
+labelProvider.Label.Name:SetText("")
+mouseFocus = false
+Check("the name goes when the cursor leaves the map", Hover(200, 150) == nil)
 
 -- Move: Blizzard's next anchor gives way to the saved place, in UIParent units.
 SimpleMapDB.compact = { 100, 500 }
