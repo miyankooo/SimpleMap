@@ -7,7 +7,7 @@ A WoW Forever addon that lets you move the map frame anywhere, uncovers the hidd
 ## Features
 
 - Move the map frame anywhere: drag the title bar of the Map & Quest Log or the full-screen map. Each keeps its own place.
-- Uncover hidden zones: every zone shows in full, including the areas you have not explored yet. Your exploration progress stays as it is.
+- Uncover hidden zones: every zone shows in full, including the areas you have not explored yet, and hovering any area shows its name. Your exploration progress stays as it is.
 - Scale the full-screen map: drag its bottom-right corner to make it bigger or smaller. Zooming in and out keeps working at any size.
 - See the game world around the full-screen map instead of a black screen, and click through to it.
 - Nothing to set up.
