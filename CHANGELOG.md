@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/miyankooo/SimpleMap/compare/v1.1.0...v1.1.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* opening the map in Riverglades no longer throws a Lua error ([48afdb2](https://github.com/miyankooo/SimpleMap/commit/48afdb2bbfc9125322df4e15fff9437afaa49224))
+
 ## [1.1.0](https://github.com/miyankooo/SimpleMap/compare/v1.0.1...v1.1.0) (2026-11-11)
 
 
