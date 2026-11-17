@@ -30,9 +30,14 @@ local function Reveal(pin, textures)
         return
     end
 
+    -- An explored overlay can be a bare hit rect with no tiles (WorldMapOverlay 5550 in Riverglades), which
+    -- Blizzard draws nothing for and Data.lua leaves out.
     local explored = {}
     for _, info in ipairs(C_MapExplorationInfo.GetExploredMapTextures(mapID) or {}) do
-        explored[info.fileDataIDs[1]] = true
+        local fileDataID = info.fileDataIDs[1]
+        if fileDataID then
+            explored[fileDataID] = true
+        end
     end
     local layer = C_Map.GetMapArtLayers(mapID)[map:GetCanvasContainer():GetCurrentLayerIndex()]
     local tileWidth, tileHeight = layer.tileWidth, layer.tileHeight

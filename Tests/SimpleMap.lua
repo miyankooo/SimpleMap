@@ -94,7 +94,10 @@ C_Map = {
     GetMapArtLayers = function() return { { layerWidth = 1000, layerHeight = 700, tileWidth = 256, tileHeight = 256 } } end,
     GetAreaInfo = function(areaID) return areaNames[areaID] end,
 }
-C_MapExplorationInfo = { GetExploredMapTextures = function() return { { fileDataIDs = { 2001 } } } end }
+-- The second explored overlay is a bare hit rect without tiles, as the client returns for some areas.
+C_MapExplorationInfo = {
+    GetExploredMapTextures = function() return { { fileDataIDs = { 2001 } }, { fileDataIDs = {} } } end,
+}
 
 local maximized = false
 local map = { GetMapID = function() return 1 end }
